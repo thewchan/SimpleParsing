@@ -503,6 +503,10 @@ def default_value(field: dataclasses.Field) -> Union[T, _MISSING_TYPE]:
         return dataclasses.MISSING
 
 
+def has_no_default(field: dataclasses.Field) -> bool:
+    return field.default is MISSING and field.default_factory is MISSING
+
+
 def trie(sentences: List[List[str]]) -> Dict[str, Union[str, Dict]]:
     """Given a list of sentences, creates a trie as a nested dicts of word strings.
 

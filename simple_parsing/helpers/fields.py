@@ -321,7 +321,7 @@ class SimpleHelpFormatter(argparse.ArgumentDefaultsHelpFormatter,
 
 Formatter = SimpleHelpFormatter
 
-def subparsers(subcommands: Dict[str, Type[Dataclass]]) -> Any:
+def subparsers(subcommands: Dict[str, Type[Dataclass]], **kwargs) -> Any:
     return field(metadata={
         "subparsers": subcommands,
-    })
+    }, **kwargs)

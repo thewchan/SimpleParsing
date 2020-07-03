@@ -3,15 +3,16 @@ import collections
 import dataclasses
 import enum
 import inspect
+from dataclasses import MISSING
 from enum import Enum
 from typing import *
 from typing import cast
 
 from .. import docstring, utils
-from ..utils import Dataclass, DataclassType
 from ..helpers import dict_field
-from .wrapper import Wrapper
 from ..logging_utils import get_logger
+from ..utils import Dataclass, DataclassType
+from .wrapper import Wrapper
 
 logger = get_logger(__file__)
 
@@ -510,9 +511,9 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
         if self._default is not None:
             return self._default
 
-        default: Any = utils.default_value(self.field)
+        default: Any = self.field.default
 
-        if default is dataclasses.MISSING:
+        if utils.has_no_default(self.field):
             default = None
 
         if self.action == "store_true" and default is None:
@@ -526,7 +527,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
             # attribute on that default instance.
             defaults = []
             for default_dataclass_instance in self.parent.defaults:
-                parent_value = getattr(default_dataclass_instance, self.name)
+                parent_value = getattr(default_dataclass_instance, self.name, None)
                 defaults.append(parent_value)
             default = defaults[0] if len(defaults) == 1 else defaults
 
@@ -557,6 +558,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
             self._required = False
         elif self.is_optional:
             self._required = False
+        
         elif self.parent.required:
             # if the parent dataclass is required, then this attribute is too.
             # TODO: does that make sense though?
@@ -566,9 +568,13 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
             self._required = False
         elif self.nargs == "+":
             self._required = True
+        
+        elif self.parent.defaults:
+            self._required = False
 
         elif self.default is None:
             self._required = True
+        
         elif self.is_reused:
             # if we're reusing this argument, the default value might be a list
             # of `MISSING` values.

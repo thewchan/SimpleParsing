@@ -56,11 +56,18 @@ class DataclassWrapper(Wrapper[Dataclass]):
                     f"supported yet. (container of a dataclass type)"
                 )
             
-            elif dataclasses.is_dataclass(field.type):
+            elif dataclasses.is_dataclass(field.type): 
                 # handle a nested dataclass attribute
                 dataclass, name = field.type, field.name
                 child_wrapper = DataclassWrapper(dataclass, name, parent=self, _field=field)
                 self._children.append(child_wrapper)
+
+            elif utils.is_optional(field.type) and dataclasses.is_dataclass(utils.get_type_arguments(field.type)[0]):
+                # nested (Optional) dataclass attribute.
+                dataclass, name = utils.get_type_arguments(field.type)[0], field.name
+                child_wrapper = DataclassWrapper(dataclass, name, parent=self, _field=field)
+                self._children.append(child_wrapper)
+
             else:
                 # a normal attribute
                 field_wrapper = FieldWrapper(field, parent=self)
@@ -135,10 +142,10 @@ class DataclassWrapper(Wrapper[Dataclass]):
                 for default in self.parent.defaults
             ]
         else:
-            default_field_value = utils.default_value(self._field)
-            if isinstance(default_field_value, _MISSING_TYPE):
+            if utils.has_no_default(self._field):
                 self._defaults = []
             else:
+                default_field_value = utils.default_value(self._field)
                 self._defaults = [default_field_value]
         return self._defaults
 

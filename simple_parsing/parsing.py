@@ -10,18 +10,20 @@ import re
 import textwrap
 import typing
 import warnings
-from argparse import Namespace
-from typing import Dict, Type, Any, List, Sequence, Text, Union
+from argparse import HelpFormatter, Namespace
 from collections import defaultdict
+from dataclasses import MISSING
+from typing import (Any, ClassVar, Dict, List, Sequence, Text, Type, Union,
+                    overload)
+
 from . import utils
 from .conflicts import ConflictResolution, ConflictResolver
-from .utils import Dataclass, split_dest
-from .wrappers import DataclassWrapper, FieldWrapper
 from .helpers import SimpleHelpFormatter
 from .logging_utils import get_logger
+from .utils import Dataclass, split_dest
+from .wrappers import DataclassWrapper, FieldWrapper
+
 logger = get_logger(__file__)
-from argparse import HelpFormatter
-from typing import ClassVar, overload
 
 class ArgumentParser(argparse.ArgumentParser):
     def __init__(self, *args,
@@ -246,7 +248,38 @@ class ArgumentParser(argparse.ArgumentParser):
                 # the constructor. Might be fine though.
                 constructor = wrapper.dataclass
                 constructor_args = self.constructor_arguments[destination]
-                instance = constructor(**constructor_args)
+                all_none_values = all(
+                    v is None for v in constructor_args.values()
+                )
+                some_fields_required = any(
+                    utils.has_no_default(f.field)
+                    for f in wrapper.fields
+                )
+                non_none_default = any(
+                    f.field.default not in {None, MISSING} for f in wrapper.fields
+                )
+                is_optional_type = wrapper._field and utils.is_optional(wrapper._field.type)
+                if all_none_values and is_optional_type and (some_fields_required or non_none_default): 
+                    # If there is any required field that has a value of
+                    # None in the constructor arguments, then we know that
+                    # the actual 'instance' should be ignored (set to none)
+                    # in the namespace.
+                    # Also, if some fields have a non-None default value,
+                    # but all the values in constructor_args are None, then
+                    # set the instance to None.
+                    # TODO: This is hacky, and doesn't take into account the
+                    # case where there is an Optional[Foo] with Foo itself
+                    # containing dataclasses (which would be instantiated by
+                    # this very function). This is bad because
+                    # __post_init__ might do something.
+                    logger.debug(f"Optional type: {wrapper}")
+                    logger.debug(f"all none values: {all_none_values}")
+                    logger.debug(f"some required fields {some_fields_required}")
+                    logger.debug(f"Non none default for some fields {non_none_default}")
+                    logger.debug(f"Setting instance to None for wrapper {wrapper.dest}")
+                    instance = None
+                else:
+                    instance = constructor(**constructor_args)
 
                 if wrapper.parent is not None:
                     parent_key, attr = utils.split_dest(destination)
