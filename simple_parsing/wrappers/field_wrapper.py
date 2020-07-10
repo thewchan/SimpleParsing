@@ -293,7 +293,17 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
             return raw_parsed_value
 
         elif self.is_tuple:
-            logger.debug(f"we're parsing a tuple!")
+            # from ..utils import get_type_arguments
+            # from ..helpers.serialization.decoding import decode_tuple
+            # args = get_type_arguments(self.field.type)
+            # nargs = utils.get_container_nargs(self.field.type)
+            # n_values = len(raw_parsed_value)
+            # logger.debug(f"we're parsing a tuple with type args {args}, nargs={nargs}, raw parsed value has length {n_values}")
+            
+            # if nargs == "*":
+            #     pass
+
+            # return decode_tuple(*args)(raw_parsed_value)
             # argparse always returns lists by default. If the field was of a
             # Tuple type, we just transform the list to a Tuple.
             if not isinstance(raw_parsed_value, tuple):

@@ -1,9 +1,14 @@
+from dataclasses import dataclass
+from enum import Enum
+from pathlib import Path
+from typing import Union
+
 import pytest
 
-from dataclasses import dataclass
 from simple_parsing import ArgumentParser, choice
-from typing import Union
+
 from .testutils import *
+
 
 @dataclass
 class A(TestSetup):
@@ -94,7 +99,6 @@ def test_choice_with_default_instance():
     p = Parent.setup("")
     assert p.d.option == AA("parent")
 
-from enum import Enum
 
 
 class Color(Enum):
@@ -133,7 +137,21 @@ def test_passing_enum_to_choice_with_key_as_default():
         @dataclass
         class Something(TestSetup):
             favorite_color: Color = choice(Color, default="blue")
-        
+
+def test_passing_dict_to_choice_with_None_default():
+    @dataclass
+    class Something(TestSetup):
+        folder: Optional[Path] = choice({
+            "root": Path("/"),
+            "home": Path("~")
+        }, default=None)
+
+    s = Something.setup("--folder root")
+    assert s.folder == Path("/")
+
+    s = Something.setup("")
+    assert s.folder == None
+
 
 def test_passing_enum_to_choice_is_same_as_enum_attr():
 
@@ -154,4 +172,3 @@ def test_passing_enum_to_choice_is_same_as_enum_attr():
     assert s.favorite_color == Color.blue
     s = Something2.setup("--favorite_color blue")
     assert s.favorite_color == Color.blue
-

@@ -9,7 +9,6 @@ from ..utils import Dataclass, DataclassType
 from .wrapper import Wrapper
 from .field_wrapper import FieldWrapper
 from ..logging_utils import get_logger
-
 logger = get_logger(__file__)
 
 class DataclassWrapper(Wrapper[Dataclass]):
@@ -77,9 +76,14 @@ class DataclassWrapper(Wrapper[Dataclass]):
         group = parser.add_argument_group(title=self.title, description=self.description)
 
         for wrapped_field in self.fields:
+            field_type = wrapped_field.field.type
+
             if wrapped_field.is_subparser:
                 wrapped_field.add_subparsers(parser)
-                
+
+            elif callable(getattr(field_type, "add_argparse_args", None)):
+                wrapped_field.field.type.add_argparse_args(parser)
+
             elif wrapped_field.arg_options:
                 logger.debug(f"Arg options for field '{wrapped_field.name}': {wrapped_field.arg_options}")
                 # TODO: CustomAction isn't very easy to debug, and is not working. Maybe look into that. Simulating it for now.
@@ -135,11 +139,14 @@ class DataclassWrapper(Wrapper[Dataclass]):
                 for default in self.parent.defaults
             ]
         else:
-            default_field_value = utils.default_value(self._field)
-            if isinstance(default_field_value, _MISSING_TYPE):
+            if not utils.has_default_value(self._field):
                 self._defaults = []
             else:
-                self._defaults = [default_field_value]
+                default_field_value = utils.default_value(self._field)
+                if default_field_value in [MISSING, None]:
+                    self._defaults = []
+                else:
+                    self._defaults = [default_field_value]
         return self._defaults
 
     @defaults.setter

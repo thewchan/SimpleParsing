@@ -484,6 +484,10 @@ def get_nesting_level(possibly_nested_list):
         )
 
 
+def has_default_value(field: dataclasses.Field) -> bool:
+    return field.default is not MISSING or field.default_factory is not MISSING
+
+
 def default_value(field: dataclasses.Field) -> Union[T, _MISSING_TYPE]:
     """Returns the default value of a field in a dataclass, if available.
     When not available, returns `dataclasses.MISSING`.
@@ -498,9 +502,11 @@ def default_value(field: dataclasses.Field) -> Union[T, _MISSING_TYPE]:
         return field.default
     elif field.default_factory is not dataclasses.MISSING:  # type: ignore
         constructor = field.default_factory # type: ignore
-        return constructor()
-    else:
-        return dataclasses.MISSING
+        try:
+            return constructor()
+        except TypeError:
+            pass
+    return dataclasses.MISSING
 
 
 def trie(sentences: List[List[str]]) -> Dict[str, Union[str, Dict]]:
