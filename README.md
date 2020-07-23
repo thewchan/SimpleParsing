@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.com/lebrice/SimpleParsing.svg?branch=master)](https://travis-ci.com/lebrice/SimpleParsing) [![PyPI version](https://badge.fury.io/py/simple-parsing.svg)](https://badge.fury.io/py/simple-parsing)
-
+[![Coverage Status](https://coveralls.io/repos/github/lebrice/SimpleParsing/badge.svg?branch=master)](https://coveralls.io/github/lebrice/SimpleParsing?branch=master)
 
 # Simple, Elegant, Typed Argument Parsing <!-- omit in toc -->
 

@@ -8,6 +8,8 @@ install:
 - pip install pyyaml
 script:
 - pytest
+after_sucess:
+  coveralls
 deploy:
   provider: pypi
   user: "__token__"
