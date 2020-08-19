@@ -45,6 +45,7 @@ class Serializable:
     """Makes a dataclass serializable to and from dictionaries.
 
     Supports JSON and YAML files for now.
+    NOTE: The `pyyaml` package is required for saving/loading to yaml files.
 
     >>> from dataclasses import dataclass
     >>> from simple_parsing.helpers import Serializable
