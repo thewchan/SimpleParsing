@@ -155,12 +155,20 @@ def parse_union(*types: Type[T]) -> Callable[[Any], Union[T, Any]]:
         types.remove(type(None))
 
     parsing_fns: List[Callable[[Any], T]] = [
-        parse_optional(t) if optional else get_parsing_fn(t) for t in types
+        get_parsing_fn(t) for t in types
     ]
+    if optional:
+        parsing_fns.append(parse_none())
     # Try using each of the non-None types, in succession. Worst case, return the value.
     return try_functions(*parsing_fns)
 
-
+def parse_none() -> Callable[[Optional[str]], None]:
+    def _parse_none(val: Optional[str]) -> None:
+        if val is None or isinstance(val, str) and val.lower() in {"none", ""}:
+            return None
+        raise Exception(f"Expected 'None', 'none' or no value, but got {val}")
+    return _parse_none
+        
 def parse_optional(t: Type[T]) -> Callable[[Optional[Any]], Optional[T]]:
     parse = get_parsing_fn(t)
     def _parse_optional(val: Optional[Any]) -> Optional[T]:
@@ -217,7 +225,9 @@ def parse_tuple(tuple_item_types: Tuple[Type[T], ...]) -> Callable[[List[T]], Tu
 
 
 def parse_list(list_item_type: Type[T]) -> T:
-    return get_parsing_fn(list_item_type)
+    from simple_parsing.utils import _parse_container
+    return _parse_container(List[list_item_type])
+    # return get_parsing_fn(list_item_type)
 
 
 def no_op(v: T) -> T:

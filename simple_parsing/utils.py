@@ -173,6 +173,7 @@ def is_list(t: Type) -> bool:
         bool: True if `t` is list or a subclass of list.
     
     >>> from typing import *
+    >>> import typing
     >>> is_list(list)
     True
     >>> is_list(tuple)
@@ -180,6 +181,8 @@ def is_list(t: Type) -> bool:
     >>> is_list(List)
     True
     >>> is_list(List[int])
+    True
+    >>> is_list(typing.List[int])
     True
     >>> is_list(List[Tuple[int, str, None]])
     True

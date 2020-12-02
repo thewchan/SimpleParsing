@@ -170,6 +170,14 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
         
         elif self.is_optional:
             _arg_options["type"] = get_parsing_fn(self.field.type)
+            _arg_options["nargs"] = "?"
+            non_none_type = list(set(self.type_arguments) - set([type(None)]))[0]
+            # for Optional[List[int]], we allow zeros or more args.
+            # import typing_inspect as tpi
+            # assert False, (non_none_type, tpi.is_generic_type(non_none_type))
+            if utils.is_list(non_none_type):
+                _arg_options["nargs"] = "*"
+                
 
         elif self.is_union:
             logger.debug(f"Parsing a Union type!")
@@ -296,6 +304,10 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
         Returns:
             Any: The processed value
         """
+        logger.debug(
+            f"field postprocessing for field of type '{self.type}' and with "
+            f"value '{raw_parsed_value}'"
+        )
         if self.is_enum:
             logger.debug(
                 f"field postprocessing for Enum field '{self.name}' with value:"
@@ -340,6 +352,19 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
         elif self.is_subparser:
             return raw_parsed_value
 
+        elif self.is_optional:
+            non_none_type = list(set(self.type_arguments) - set([type(None)]))[0]
+            # for Optional[List[int]], we allow zeros or more args.
+            # import typing_inspect as tpi
+            
+            # assert False, (non_none_type, tpi.is_generic_type(non_none_type))
+            if utils.is_list(non_none_type):
+                # if 
+                item_type = utils.get_item_type(non_none_type)
+                if isinstance(raw_parsed_value, list) and len(raw_parsed_value) == 1:
+                    if isinstance(raw_parsed_value[0], list) and not utils.is_list(item_type):
+                        raw_parsed_value = raw_parsed_value[0]
+        
         elif self.type not in utils.builtin_types:
             # TODO: what if we actually got an auto-generated parsing function?
             try:
@@ -355,10 +380,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
                 )
                 return raw_parsed_value
 
-        logger.debug(
-            f"field postprocessing for field of type '{self.type}' and with "
-            f"value '{raw_parsed_value}'"
-        )
+        
         return raw_parsed_value
 
     @property
