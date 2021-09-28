@@ -101,8 +101,8 @@ def add_subparsers(
         description = type.__doc__
         type_parser: ArgumentParser = subparser.add_parser(
             name,
-            help=help,
-            description=description,
+            help=help + "(help)",
+            description=description + "(desc.)",
         )
         type_parser.add_arguments(type, dest=dest)
         subparsers[name] = type_parser
@@ -115,6 +115,7 @@ def main_simple_example():
     letters = {"a": A, "b": B, "c": C}
     persons = {"bob": Bob, "claire": Claire, "alice": Alice}
 
+    parser = ArgumentParser("demo")
     child_parsers = add_subparsers(
         parser,
         title="letter_or_person",
@@ -209,10 +210,7 @@ def add_independent_subparsers(
     n_groups = len(group_name_to_subparser_dict)
 
     title = " or ".join(group_name_to_subparser_dict.keys())
-    metavar = "|".join(
-        f"<{group_name}>"
-        for group_name in group_name_to_subparser_dict.keys()
-    )
+    metavar = "|".join(f"<{group_name}>" for group_name in group_name_to_subparser_dict.keys())
 
     # Get a dict with the types of each subparser for the "first" command.
     name_to_type: Dict[str, Type[Dataclass]] = {}
@@ -255,7 +253,7 @@ def add_independent_subparsers(
             args = copy.deepcopy(args)
 
         for level in range(n_groups):
-            
+
             # Extract the destination and delete that temporary attribute.
             if not required:
                 # TODO: The attribute might not be there, in which case we can skip this?

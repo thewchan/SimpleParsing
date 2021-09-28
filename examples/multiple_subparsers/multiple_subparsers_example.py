@@ -26,6 +26,7 @@ class MnistConfig(DatasetConfig):
     image_size: ClassVar[Tuple[int, int, int]] = (28, 28, 1)
     n_samples: int = 10_000  # some random number just for sake of illustration.
     shuffle: bool = True
+    foo: str = "foo_hey"
 
 
 @dataclass
