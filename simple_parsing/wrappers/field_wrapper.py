@@ -193,6 +193,8 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
             # issue 64: Need to add a temporary 'help' string, so that the formatter
             # automatically adds the (default: '123'). We then remove it.
             _arg_options["help"] = TEMPORARY_TOKEN
+        elif self.required:
+            _arg_options["help"] = argparse.SUPPRESS
 
         if utils.is_choice(self.field):
             _arg_options["type"] = str
@@ -237,9 +239,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
                 _arg_options["nargs"] = utils.get_container_nargs(wrapped_type)
 
             elif utils.is_list(wrapped_type):
-                _arg_options["type"] = utils.get_argparse_type_for_container(
-                    wrapped_type
-                )
+                _arg_options["type"] = utils.get_argparse_type_for_container(wrapped_type)
                 _arg_options["nargs"] = "*"
                 # NOTE: Can't set 'const', since we'd get:
                 # ValueError: nargs must be '?' to supply const
@@ -268,9 +268,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
                     return e.name if isinstance(e, Enum) else e
 
                 if self.is_reused:
-                    _arg_options["default"] = [
-                        enum_to_str(default) for default in self.default
-                    ]
+                    _arg_options["default"] = [enum_to_str(default) for default in self.default]
                 else:
                     _arg_options["default"] = enum_to_str(self.default)
 
@@ -288,9 +286,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
                 _arg_options["type"] = utils.get_argparse_type_for_container(self.type)
 
         elif utils.is_tuple(self.type):
-            logger.debug(
-                f"Adding a Tuple attribute '{self.name}' with type {self.type}"
-            )
+            logger.debug(f"Adding a Tuple attribute '{self.name}' with type {self.type}")
             _arg_options["nargs"] = utils.get_container_nargs(self.type)
             _arg_options["type"] = get_parsing_fn(self.type)
 
@@ -313,9 +309,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
             else:
                 # Remove the 'metavar' that we auto-generated above.
                 _arg_options.pop("metavar", None)
-            _arg_options["type"] = self.custom_arg_options.get(
-                "type", get_parsing_fn(self.type)
-            )
+            _arg_options["type"] = self.custom_arg_options.get("type", get_parsing_fn(self.type))
 
         if self.is_reused:
             if self.required:
@@ -490,9 +484,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
 
     @property
     def destinations(self) -> List[str]:
-        return [
-            f"{parent_dest}.{self.name}" for parent_dest in self.parent.destinations
-        ]
+        return [f"{parent_dest}.{self.name}" for parent_dest in self.parent.destinations]
 
     @property
     def option_strings(self) -> List[str]:
@@ -558,12 +550,8 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
         # even if an alias isn't explicitly created.
 
         if add_dash_variants == DashVariant.UNDERSCORE_AND_DASH:
-            additional_options = [
-                option.replace("_", "-") for option in options if "_" in option
-            ]
-            additional_dashes = [
-                "-" if len(option) == 1 else "--" for option in additional_options
-            ]
+            additional_options = [option.replace("_", "-") for option in options if "_" in option]
+            additional_dashes = ["-" if len(option) == 1 else "--" for option in additional_options]
             options.extend(additional_options)
             dashes.extend(additional_dashes)
 
@@ -647,8 +635,11 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
 
         default: Any = utils.default_value(self.field)
 
+        # TODO: This is probably causing subtle bugs like #96
         if default is dataclasses.MISSING:
             default = None
+            if self.nargs not in (argparse.ONE_OR_MORE, argparse.OPTIONAL):
+                self.required = True
 
         if self.action == "store_true" and default is None:
             default = False
@@ -735,7 +726,9 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
                 # NOTE: Here we'd like to convert the fields type to an actual type, in case the
                 # `from __future__ import annotations` feature is used.
                 # This should also resolve most forward references.
-                field_type = utils.get_field_type_from_annotations(self.parent.dataclass, self.field.name)
+                field_type = utils.get_field_type_from_annotations(
+                    self.parent.dataclass, self.field.name
+                )
                 self._type = field_type
 
             if self.is_choice and self.choice_dict:
@@ -778,9 +771,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
                 self.parent.dataclass, self.field.name
             )
         except (SystemExit, Exception) as e:
-            logger.debug(
-                f"Couldn't find attribute docstring for field {self.name}, {e}"
-            )
+            logger.debug(f"Couldn't find attribute docstring for field {self.name}, {e}")
             self._docstring = docstring.AttributeDocString()
 
         if self._docstring.docstring_below:
@@ -909,9 +900,7 @@ class FieldWrapper(Wrapper[dataclasses.Field]):
         return f"group.add_argument(*{self.option_strings}, **{arg_options_string})"
 
 
-def only_keep_action_args(
-    options: Dict[str, Any], action: Union[str, Any]
-) -> Dict[str, Any]:
+def only_keep_action_args(options: Dict[str, Any], action: Union[str, Any]) -> Dict[str, Any]:
     """Remove all the arguments in `options` that aren't required by the Action.
 
     Parameters

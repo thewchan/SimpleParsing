@@ -15,9 +15,7 @@ from typing import List
 def test_custom_args():
     @dataclass
     class Foo(TestSetup):
-        output_dir: str = field(
-            default="/out", alias=["-o", "--out"], choices=["/out", "/bob"]
-        )
+        output_dir: str = field(default="/out", alias=["-o", "--out"], choices=["/out", "/bob"])
 
     foo = Foo.setup("--output_dir /bob")
     assert foo.output_dir == "/bob"
@@ -44,7 +42,7 @@ def test_custom_action_args():
 
     @dataclass
     class Foo(TestSetup):
-        output_dir: str = field(type=str, nargs="?", action=CustomAction)
+        output_dir: str = field(type=str, nargs="?", action=CustomAction, default="")
 
     foo = Foo.setup("")
     assert value == 0
@@ -95,10 +93,11 @@ def test_custom_nargs_plus():
 def test_custom_nargs_star():
     @dataclass
     class Foo(TestSetup):
-        some_int: int = field(type=int, nargs="*")
+        some_int: List[int] = field(type=int, nargs="*")
 
-    foo = Foo.setup("")
-    assert foo.some_int == None
+    with exits_and_writes_to_stderr(match="the following arguments are required: --some_int"):
+        foo = Foo.setup("")
+        assert foo.some_int == None
 
     foo = Foo.setup("--some_int")
     assert foo.some_int == []
